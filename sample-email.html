@@ -1,47 +1,53 @@
-const name = $json["NAME"] || "User";
-const topics = $json["TOPICS"] || "various topics";
-
-// Check if LLM node exists and has output
-const llmOutput = $node["Basic LLM Chain"].json?.text;
-
-if (!llmOutput) {
-  return [
-    {
-      json: {
-        html: `<h1>Error</h1><p>LLM output missing. Please check if the Basic LLM Chain node executed correctly.</p>`
-      }
-    }
-  ];
+function basicMarkdownToHtml(markdown) {
+  if (!markdown) return "";
+  // Replace bold **text**
+  let html = markdown.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  // Replace italics *text*
+  html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
+  // Replace links [text](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  // Replace newlines with <br>
+  html = html.replace(/\n/g, "<br>");
+  return html;
 }
 
-const html = `
-<html>
-  <head>
-    <style>
-      body { background: #1a1a3a; color: white; font-family: sans-serif; padding: 20px; }
-      h1 { color: #cceeff; }
-      .card { background: #4b0082; padding: 20px; border-radius: 15px; }
-      .summary { background: white; color: black; padding: 10px; border-radius: 10px; margin-top: 10px; }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <h1>📰 Your Personalized News Summary</h1>
-      <p>Hi <b>${name}</b>, here are the latest stories based on your interest in <b>${topics}</b>.</p>
-      <p>${new Date().toLocaleString()}</p>
-    </div>
-    <div class="summary">
-      <pre>${llmOutput}</pre>
-    </div>
-    <p style="font-size: 12px; color: gray;">This email was sent using n8n automation.</p>
-  </body>
-</html>
-`;
+return items.map(item => {
+  const name = item.json["NAME"] || "User";
+  const topics = item.json["TOPICS"] || "various topics";
+  const llmOutputRaw = item.json.text || $("Basic LLM Chain").json?.text || "";
+  const llmOutput = basicMarkdownToHtml(llmOutputRaw);
 
-return [
-  {
+  const html = `
+  <html>
+    <head>
+      <style>
+        body { background: #1a1a3a; color: white; font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; }
+        h1 { color: #cceeff; }
+        .card { background: #800080; padding: 24px; border-radius: 16px; margin-bottom: 24px; }
+        .summary { background: white; color: #222; padding: 20px; border-radius: 14px; margin-top: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        strong { color: #800080; }
+        pre { background: none; color: inherit; font-family: inherit; border: none; margin: 0; padding: 0; white-space: pre-wrap; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h1>📰 Your Personalized News Summary</h1>
+        <p>Hey <b>${name}</b>!</p>
+        <p>Here are the latest stories based on your interest in <b>${topics}</b>.</p>
+        <p>${new Date().toLocaleString()}</p>
+      </div>
+      <div class="summary">
+        <pre>${llmOutput}</pre>
+      </div>
+      <p style="font-size: 12px; color: gray;">This email was sent using n8n automation.</p>
+    </body>
+  </html>
+  `;
+
+  return {
     json: {
+      ...item.json,
       html: html
     }
-  }
-];
+  };
+});
