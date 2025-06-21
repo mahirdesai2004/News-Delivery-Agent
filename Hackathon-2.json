@@ -1,0 +1,306 @@
+{
+  "name": "Hackathon",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "ad16443c-9f8c-4403-9bc4-22e2b35744ce",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        1140
+      ],
+      "id": "ee8619b6-6408-4fa5-b7e8-ef268ef1a07e",
+      "name": "Webhook",
+      "webhookId": "ad16443c-9f8c-4403-9bc4-22e2b35744ce"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -180,
+        -60
+      ],
+      "id": "7f625bda-3e83-4b34-b3dd-c2e8e9dd2ef7",
+      "name": "Execute Workflow!?"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -180,
+        100
+      ],
+      "id": "827c7c2f-e1f5-4057-b672-57dd44957cd8",
+      "name": "Schedule for News"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1iFC8L2CE7x0oZMqNiWTBL5GYtNxXpNe3q2tytBbzDqI",
+          "mode": "list",
+          "cachedResultName": "news_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iFC8L2CE7x0oZMqNiWTBL5GYtNxXpNe3q2tytBbzDqI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iFC8L2CE7x0oZMqNiWTBL5GYtNxXpNe3q2tytBbzDqI/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        40,
+        0
+      ],
+      "id": "4b0543ca-919f-44ac-a81b-886dd16be2e1",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8PnjQBLz5K8GY3Od",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 2,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        260,
+        0
+      ],
+      "id": "c69ae5d1-1e5b-458e-90a0-fcbcc74f3cdb",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "url": "=https://serpapi.com/search.json?q={{$json[\"TOPICS\"]}}&tbm=nws&tbs=qdr:d",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "serpApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        -120
+      ],
+      "id": "21d374e9-aa74-45e0-8ed9-2dee74fe2e84",
+      "name": "HTTP Request",
+      "credentials": {
+        "serpApi": {
+          "id": "fb2PeD6Lt6LNMj4b",
+          "name": "SerpAPI account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a helpful assistant that summarizes news articles into clear bullet points. Return 10 items, each with:\n- Headline\n- Source\n- 1-line summary\n\nThe user message is:\nSummarize the following top 10 latest news articles based on the topic: \"{{$node[\"Loop Over Items\"].json[\"TOPICS\"]}}\".\n\nReturn each item as:\n- A headline\n- 1-line summary\n- Source\n\nHere are the articles:\n{{ $node[\"HTTP Request\"].json.news_results.slice(0, 10).map(n => `${n.title} - ${n.snippet} (Source: ${n.source})`).join(\"\\n\\n\") }} ",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        800,
+        -160
+      ],
+      "id": "3ddff83c-bb5e-44cb-9f09-8345ae22c842",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "mindcraft-gpt4o",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        800,
+        460
+      ],
+      "id": "bdae7a57-4c6e-4e74-8edd-f64b8ed8ff32",
+      "name": "Azure OpenAI Chat Model",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "H4fZQT0TpGwmdvOj",
+          "name": "Azure Open AI account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function basicMarkdownToHtml(markdown) {\n  if (!markdown) return \"\";\n  // Replace bold **text**\n  let html = markdown.replace(/\\*\\*(.*?)\\*\\*/g, \"<strong>$1</strong>\");\n  // Replace italics *text*\n  html = html.replace(/\\*(.*?)\\*/g, \"<em>$1</em>\");\n  // Replace links [text](url)\n  html = html.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '<a href=\"$2\">$1</a>');\n  // Replace newlines with <br>\n  html = html.replace(/\\n/g, \"<br>\");\n  return html;\n}\n\nreturn items.map(item => {\n  const name = item.json[\"NAME\"] || \"User\";\n  const topics = item.json[\"TOPICS\"] || \"various topics\";\n  const llmOutputRaw = item.json.text || $(\"Basic LLM Chain\").json?.text || \"\";\n  const llmOutput = basicMarkdownToHtml(llmOutputRaw);\n\n  const html = `\n  <html>\n    <head>\n      <style>\n        body { background: #1a1a3a; color: white; font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; }\n        h1 { color: #cceeff; }\n        .card { background: #800080; padding: 24px; border-radius: 16px; margin-bottom: 24px; }\n        .summary { background: white; color: #222; padding: 20px; border-radius: 14px; margin-top: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }\n        strong { color: #800080; }\n        pre { background: none; color: inherit; font-family: inherit; border: none; margin: 0; padding: 0; white-space: pre-wrap; }\n      </style>\n    </head>\n    <body>\n      <div class=\"card\">\n        <h1>📰 Your Personalized News Summary</h1>\n        <p>Hey <b>${name}</b>!</p>\n        <p>Here are the latest stories based on your interest in <b>${topics}</b>.</p>\n        <p>${new Date().toLocaleString()}</p>\n      </div>\n      <div class=\"summary\">\n        <pre>${llmOutput}</pre>\n      </div>\n      <p style=\"font-size: 12px; color: gray;\">This email was sent using n8n automation.</p>\n    </body>\n  </html>\n  `;\n\n  return {\n    json: {\n      ...item.json,\n      html: html\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        140
+      ],
+      "id": "aa6fe737-762f-4f54-ba90-7b3a66ad9bde",
+      "name": "Code",
+      "alwaysOutputData": true,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Google Sheets').item.json.MAIL }}",
+        "subject": "=📰 Your Top News,{{ $('Google Sheets').item.json.NAME }}! 🔥",
+        "message": "={{$node[\"Code\"].json[\"html\"]}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1220,
+        140
+      ],
+      "id": "a7f9c49c-9eeb-4e4c-a083-6a7b2fbaf914",
+      "name": "Gmail",
+      "webhookId": "867ae4dd-4c6e-43c1-9a64-f0118f80312c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "p0z0TG8KC8HvwnOA",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow!?": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule for News": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f06be45e-7221-4f7a-aa09-14ca8a2a2303",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "491c9e8281feb292e79a3259d7c7f4f335fb7880b694e304ec7db867d24f531a"
+  },
+  "id": "gbRhXq2agXpo2cKL",
+  "tags": []
+}
