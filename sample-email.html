@@ -1,0 +1,47 @@
+const name = $json["NAME"] || "User";
+const topics = $json["TOPICS"] || "various topics";
+
+// Check if LLM node exists and has output
+const llmOutput = $node["Basic LLM Chain"].json?.text;
+
+if (!llmOutput) {
+  return [
+    {
+      json: {
+        html: `<h1>Error</h1><p>LLM output missing. Please check if the Basic LLM Chain node executed correctly.</p>`
+      }
+    }
+  ];
+}
+
+const html = `
+<html>
+  <head>
+    <style>
+      body { background: #1a1a3a; color: white; font-family: sans-serif; padding: 20px; }
+      h1 { color: #cceeff; }
+      .card { background: #4b0082; padding: 20px; border-radius: 15px; }
+      .summary { background: white; color: black; padding: 10px; border-radius: 10px; margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>📰 Your Personalized News Summary</h1>
+      <p>Hi <b>${name}</b>, here are the latest stories based on your interest in <b>${topics}</b>.</p>
+      <p>${new Date().toLocaleString()}</p>
+    </div>
+    <div class="summary">
+      <pre>${llmOutput}</pre>
+    </div>
+    <p style="font-size: 12px; color: gray;">This email was sent using n8n automation.</p>
+  </body>
+</html>
+`;
+
+return [
+  {
+    json: {
+      html: html
+    }
+  }
+];
